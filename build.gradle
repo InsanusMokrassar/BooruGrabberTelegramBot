@@ -1,0 +1,35 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath libs.kotlin.gradle.plugin
+        classpath libs.kotlin.serialization.plugin
+    }
+}
+
+plugins {
+    alias libs.plugins.kotlin.jvm
+    alias libs.plugins.kotlin.serialization
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation libs.kotlin
+
+    implementation libs.tgbotapi
+}
+
+application {
+    mainClassName = 'telegram_bot.AppKt'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
