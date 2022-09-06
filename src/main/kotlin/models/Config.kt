@@ -1,8 +1,9 @@
-package telegram_bot
+package models
 
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Config(
-    val token: String
+    val token: String,
+    val database: DatabaseConfig
 )

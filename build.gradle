@@ -17,12 +17,19 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
     implementation libs.kotlin
 
     implementation libs.tgbotapi
+    implementation libs.microutils.repos.exposed
+    implementation libs.microutils.repos.cache
+    implementation libs.kslog
+    implementation libs.exposed
+    implementation libs.psql
+    implementation libs.imageboard
 }
 
 application {
