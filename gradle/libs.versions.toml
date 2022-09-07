@@ -8,6 +8,7 @@ krontab = "0.8.0"
 kslog = "0.5.1"
 exposed = "0.39.2"
 psql = "42.5.0"
+clikt = "3.5.0"
 
 [libraries]
 
@@ -23,6 +24,8 @@ exposed = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "expose
 psql = { module = "org.postgresql:postgresql", version.ref = "psql" }
 
 imageboard = { module = "com.github.Kodehawa:imageboard-api", version.ref = "imageboard" }
+
+clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 
 # Libs for classpath
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

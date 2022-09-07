@@ -28,6 +28,8 @@ dependencies {
     implementation libs.microutils.repos.cache
     implementation libs.kslog
     implementation libs.exposed
+    implementation libs.clikt
+    implementation libs.krontab
     implementation libs.psql
     implementation libs.imageboard
 }
