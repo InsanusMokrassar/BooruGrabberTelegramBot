@@ -3,6 +3,7 @@ import dev.inmo.micro_utils.coroutines.*
 import dev.inmo.micro_utils.pagination.utils.doForAllWithNextPaging
 import dev.inmo.micro_utils.repos.add
 import dev.inmo.micro_utils.repos.cache.cache.FullKVCache
+import dev.inmo.micro_utils.repos.cache.cache.KVCache
 import dev.inmo.micro_utils.repos.cache.cached
 import dev.inmo.micro_utils.repos.exposed.keyvalue.ExposedKeyValueRepo
 import dev.inmo.micro_utils.repos.exposed.onetomany.ExposedKeyValuesRepo
@@ -69,7 +70,7 @@ suspend fun main(args: Array<String>) {
         { this },
         { ChatId(this) },
         { this },
-    ).cached(FullKVCache(), scope = scope)
+    ).cached(KVCache(128), scope = scope)
 
     val chatsChangingMutex = Mutex()
     val chatsSendingJobs = mutableMapOf<ChatId, Job>()
@@ -79,52 +80,58 @@ suspend fun main(args: Array<String>) {
         // in this lambda you will be able to call methods without "bot." prefix
         val me = getMe()
 
+        suspend fun triggerSendForChat(chatId: ChatId, settings: ChatSettings) {
+            val result = let {
+                val result = mutableListOf<BoardImage>()
+                var i = 0
+                while (result.size < settings.count) {
+                    val images = settings.makeRequest(i).takeIf { it.isNotEmpty() } ?: break
+                    result.addAll(
+                        images.filterNot {
+                            chatsUrlsSeen.contains(chatId, it.url)
+                        }
+                    )
+                    i++
+                }
+                val toDrop = (result.size - settings.count).takeIf { it > 0 } ?: return@let result
+                result.dropLast(toDrop)
+            }.takeIf { it.isNotEmpty() } ?: return
+            runCatchingSafely {
+                val urls = result.map { it.url.also(::println) }
+                chatsUrlsSeen.add(chatId, urls)
+                when {
+                    urls.isEmpty() -> return@runCatchingSafely
+                    urls.size == 1 -> sendPhoto(
+                        chatId,
+                        FileUrl(urls.first())
+                    )
+                    settings.gallery -> urls.chunked(mediaCountInMediaGroup.last + 1).forEach {
+                        sendVisualMediaGroup(
+                            chatId,
+                            it.map {
+                                TelegramMediaPhoto(FileUrl(it))
+                            }
+                        )
+                    }
+                    else -> urls.forEach {
+                        sendPhoto(
+                            chatId,
+                            FileUrl(it)
+                        )
+                    }
+                }
+            }.onFailure {
+                triggerSendForChat(chatId, settings)
+            }
+        }
+
         suspend fun refreshChatJob(chatId: ChatId, settings: ChatSettings?) {
             val settings = settings ?: repo.get(chatId)
             chatsChangingMutex.withLock {
                 chatsSendingJobs[chatId] ?.cancel()
                 settings ?.let {
                     chatsSendingJobs[chatId] = settings.scheduler.asFlow().subscribeSafelyWithoutExceptions(scope) {
-                        val result = mutableListOf<BoardImage>()
-                        let {
-                            var i = 0
-                            while (result.size < settings.count) {
-                                val images = settings.makeRequest(i).takeIf { it.isNotEmpty() } ?: break
-                                result.addAll(
-                                    images.filterNot {
-                                        chatsUrlsSeen.contains(chatId, it.url)
-                                    }
-                                )
-                                i++
-                            }
-                        }
-                        when {
-                            result.isEmpty() -> return@subscribeSafelyWithoutExceptions
-                            result.size == 1 -> sendPhoto(
-                                chatId,
-                                FileUrl(result.first().url)
-                            ).also {
-                                result.forEach { chatsUrlsSeen.add(chatId, it.url) }
-                            }
-                            settings.gallery -> result.chunked(mediaCountInMediaGroup.last + 1).forEach {
-                                sendVisualMediaGroup(
-                                    chatId,
-                                    it.map {
-                                        TelegramMediaPhoto(FileUrl(it.url))
-                                    }
-                                ).also { _ ->
-                                    it.forEach { chatsUrlsSeen.add(chatId, it.url) }
-                                }
-                            }
-                            else -> result.forEach {
-                                sendPhoto(
-                                    chatId,
-                                    FileUrl(it.url)
-                                ).also { _ ->
-                                    chatsUrlsSeen.add(chatId, it.url)
-                                }
-                            }
-                        }
+                        triggerSendForChat(chatId, settings)
                     }
                 }
             }

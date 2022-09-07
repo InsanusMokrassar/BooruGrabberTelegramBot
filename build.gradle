@@ -18,6 +18,7 @@ plugins {
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
+    mavenLocal()
 }
 
 dependencies {
@@ -35,7 +36,7 @@ dependencies {
 }
 
 application {
-    mainClassName = 'telegram_bot.AppKt'
+    mainClassName = 'AppKt'
 }
 
 java {
