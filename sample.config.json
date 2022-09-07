@@ -1,3 +1,9 @@
 {
-  "token": "your bot token"
+  "token": "your bot token",
+  "database": {
+    "url": "jdbc:postgresql://127.0.0.1:8092/test",
+    "username": "test",
+    "password": "test",
+    "driver": "org.postgresql.Driver"
+  }
 }
