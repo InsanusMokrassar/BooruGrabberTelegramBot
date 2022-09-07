@@ -36,9 +36,9 @@ data class ChatSettings(
             DefaultBoards.E926 -> DefaultImageBoards.E926
         }
 
-    suspend fun makeRequest(): List<BoardImage> {
+    suspend fun makeRequest(page: Int): List<BoardImage> {
         return withContext(Dispatchers.IO) {
-            board.search(count, query).blocking()
+            board.search(page, count, query).blocking()
         }
     }
 

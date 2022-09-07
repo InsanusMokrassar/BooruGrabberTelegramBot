@@ -17,7 +17,9 @@ class EnableArgsParser(
         it in 1 .. 10
     }
     val query by argument().multiple(required = true).help("Your query to booru. Use syntax \"-- -sometag\" to add excluding of some tag in query")
-    val krontab by option("-k", "--krontab").required().help("Krontab in format * * * * *. See https://bookstack.inmo.dev/books/krontab/page/string-format")
+    val krontab by option("-k", "--krontab").transformValues(5) {
+        it.joinToString(" ")
+    }.required().help("Krontab in format * * * * *. See https://bookstack.inmo.dev/books/krontab/page/string-format")
     val board by option("-b", "--board").convert {
         ChatSettings.BoardSerializer.types.getValue(it)
     }.required().help("Board type. Possible values: ${ChatSettings.BoardSerializer.types.keys.joinToString { it }}")
@@ -25,7 +27,7 @@ class EnableArgsParser(
 
     override fun run() {
         val chatSettings = ChatSettings(
-            query.joinToString(" "),
+            query.filterNot { it.isEmpty() }.joinToString(" ").trim(),
             krontab,
             board,
             count,

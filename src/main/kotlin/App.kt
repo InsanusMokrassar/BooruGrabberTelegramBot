@@ -1,10 +1,11 @@
 import dev.inmo.krontab.utils.asFlow
-import dev.inmo.micro_utils.coroutines.runCatchingSafely
-import dev.inmo.micro_utils.coroutines.subscribeSafelyWithoutExceptions
+import dev.inmo.micro_utils.coroutines.*
 import dev.inmo.micro_utils.pagination.utils.doForAllWithNextPaging
+import dev.inmo.micro_utils.repos.add
 import dev.inmo.micro_utils.repos.cache.cache.FullKVCache
 import dev.inmo.micro_utils.repos.cache.cached
 import dev.inmo.micro_utils.repos.exposed.keyvalue.ExposedKeyValueRepo
+import dev.inmo.micro_utils.repos.exposed.onetomany.ExposedKeyValuesRepo
 import dev.inmo.micro_utils.repos.mappers.withMapper
 import dev.inmo.micro_utils.repos.unset
 import dev.inmo.tgbotapi.bot.ktor.telegramBot
@@ -15,18 +16,20 @@ import dev.inmo.tgbotapi.extensions.api.send.media.*
 import dev.inmo.tgbotapi.extensions.api.send.reply
 import dev.inmo.tgbotapi.extensions.behaviour_builder.buildBehaviourWithLongPolling
 import dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling.onCommand
-import dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling.onCommandWithArgs
 import dev.inmo.tgbotapi.requests.abstracts.FileUrl
 import dev.inmo.tgbotapi.types.*
 import dev.inmo.tgbotapi.types.chat.ChannelChat
 import dev.inmo.tgbotapi.types.chat.PrivateChat
 import dev.inmo.tgbotapi.types.media.TelegramMediaPhoto
+import dev.inmo.tgbotapi.types.message.content.PhotoContent
 import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import models.Config
+import net.kodehawa.lib.imageboards.ImageBoard
+import net.kodehawa.lib.imageboards.entities.BoardImage
 
 /**
  * This method by default expects one argument in [args] field: telegram bot configuration
@@ -39,8 +42,10 @@ suspend fun main(args: Array<String>) {
     // that is your bot
     val bot = telegramBot(config.token)
 
+    ImageBoard.setUserAgent("WhoAmI?")
+
     // that is kotlin coroutine scope which will be used in requests and parallel works under the hood
-    val scope = CoroutineScope(Dispatchers.Default)
+    val scope = CoroutineScope(Dispatchers.Default + ContextSafelyExceptionHandler { it.printStackTrace() })
 
     val repo = ExposedKeyValueRepo(
         config.database.database,
@@ -52,6 +57,18 @@ suspend fun main(args: Array<String>) {
         { json.encodeToString(ChatSettings.serializer(), this) },
         { ChatId(this) },
         { json.decodeFromString(ChatSettings.serializer(), this) },
+    ).cached(FullKVCache(), scope = scope)
+
+    val chatsUrlsSeen = ExposedKeyValuesRepo(
+        config.database.database,
+        { long("chat_id") },
+        { text("url") },
+        "chatsUrlsSeen"
+    ).withMapper(
+        { chatId },
+        { this },
+        { ChatId(this) },
+        { this },
     ).cached(FullKVCache(), scope = scope)
 
     val chatsChangingMutex = Mutex()
@@ -68,26 +85,44 @@ suspend fun main(args: Array<String>) {
                 chatsSendingJobs[chatId] ?.cancel()
                 settings ?.let {
                     chatsSendingJobs[chatId] = settings.scheduler.asFlow().subscribeSafelyWithoutExceptions(scope) {
-                        val result = settings.makeRequest()
+                        val result = mutableListOf<BoardImage>()
+                        let {
+                            var i = 0
+                            while (result.size < settings.count) {
+                                val images = settings.makeRequest(i).takeIf { it.isNotEmpty() } ?: break
+                                result.addAll(
+                                    images.filterNot {
+                                        chatsUrlsSeen.contains(chatId, it.url)
+                                    }
+                                )
+                                i++
+                            }
+                        }
                         when {
                             result.isEmpty() -> return@subscribeSafelyWithoutExceptions
                             result.size == 1 -> sendPhoto(
                                 chatId,
                                 FileUrl(result.first().url)
-                            )
+                            ).also {
+                                result.forEach { chatsUrlsSeen.add(chatId, it.url) }
+                            }
                             settings.gallery -> result.chunked(mediaCountInMediaGroup.last + 1).forEach {
                                 sendVisualMediaGroup(
                                     chatId,
                                     it.map {
                                         TelegramMediaPhoto(FileUrl(it.url))
                                     }
-                                )
+                                ).also { _ ->
+                                    it.forEach { chatsUrlsSeen.add(chatId, it.url) }
+                                }
                             }
                             else -> result.forEach {
                                 sendPhoto(
                                     chatId,
                                     FileUrl(it.url)
-                                )
+                                ).also { _ ->
+                                    chatsUrlsSeen.add(chatId, it.url)
+                                }
                             }
                         }
                     }
@@ -98,7 +133,9 @@ suspend fun main(args: Array<String>) {
         doForAllWithNextPaging {
             repo.keys(it).also {
                 it.results.forEach {
-                    refreshChatJob(it, null)
+                    runCatchingSafely {
+                        refreshChatJob(it, null)
+                    }
                 }
             }
         }
@@ -113,19 +150,20 @@ suspend fun main(args: Array<String>) {
         onCommand(Regex("(help|start)"), requireOnlyCommandInMessage = true) {
             reply(it, EnableArgsParser(it.chat.id, repo, scope).getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
         }
-        onCommandWithArgs("enable") { message, strings ->
-            val parser = EnableArgsParser(message.chat.id, repo, this)
+        onCommand("enable", requireOnlyCommandInMessage = false) {
+            val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
+            val parser = EnableArgsParser(it.chat.id, repo, this)
             runCatchingSafely {
-                parser.parse(strings)
+                parser.parse(args)
             }.onFailure { e ->
                 e.printStackTrace()
-                if (message.chat is PrivateChat) {
-                    reply(message, parser.getFormattedHelp())
+                if (it.chat is PrivateChat) {
+                    reply(it, parser.getFormattedHelp())
                 }
             }
             runCatchingSafely {
-                if (message.chat is ChannelChat) {
-                    delete(message)
+                if (it.chat is ChannelChat) {
+                    delete(it)
                 }
             }
         }
