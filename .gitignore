@@ -10,5 +10,6 @@ build/
 out/
 
 local.*
+local/
 local.*/
 secret.gradle

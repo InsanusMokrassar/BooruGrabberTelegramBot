@@ -1,0 +1,22 @@
+version: "3.4"
+
+services:
+  booru_grabber_bot_postgres:
+    image: postgres
+    container_name: "booru_grabber_bot_postgres"
+    environment:
+      POSTGRES_USER: "${PG_USER}"
+      POSTGRES_PASSWORD: "${PG_PASSWORD}"
+      POSTGRES_DB: "${PG_DB}"
+    volumes:
+      - "${DATA_PATH}/db/:/var/lib/postgresql/"
+  booru_grabber_bot:
+    image: hub.docker.com/booru_grabber_bot
+    container_name: "booru_grabber_bot"
+    restart: "unless-stopped"
+    volumes:
+      - "${DATA_PATH}/config.json:/config.json"
+    links:
+      - "booru_grabber_bot_postgres:postgres"
+    depends_on:
+      - "booru_grabber_bot_postgres"

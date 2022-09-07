@@ -17,10 +17,10 @@ ExtendedBot(id=ChatId(chatId=1234567890), username=Username(username=@username_o
 
 ### Docker
 
-In this template there is template-like [docker-compose](docker-compose.yml) and [docker](Dockerfile) files. Besides,
+In this template there is template-like [docker-compose](docker-compose.yml) and [docker](sample.Dockerfile) files. Besides,
 there is [Makefile](Makefile) and you may use something like `make buildAndStartCompose` to start your bot.
 
-It is important to replace `"TOKEN"` in [Dockerfile](Dockerfile) or remove and add some config as a volume.
+It is important to replace `"TOKEN"` in [Dockerfile](sample.Dockerfile) or remove and add some config as a volume.
 
 ## What next?
 
