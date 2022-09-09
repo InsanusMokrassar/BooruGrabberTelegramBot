@@ -1,8 +1,8 @@
 [versions]
 
 kotlin = "1.7.10"
-tgbotapi = "3.2.0"
-microutils = "0.12.9"
+tgbotapi = "3.2.1"
+microutils = "0.12.11"
 imageboard = "2.5.2"
 krontab = "0.8.0"
 kslog = "0.5.1"
