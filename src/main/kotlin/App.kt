@@ -101,20 +101,22 @@ suspend fun main(args: Array<String>) {
                     urls.isEmpty() -> return@runCatchingSafely
                     urls.size == 1 -> sendPhoto(
                         chatId,
-                        FileUrl(urls.first())
+                        FileUrl(urls.first()),
+                        if (settings.attachUrls) urls.first() else null
                     )
                     settings.gallery -> urls.chunked(mediaCountInMediaGroup.last + 1).forEach {
                         sendVisualMediaGroup(
                             chatId,
                             it.map {
-                                TelegramMediaPhoto(FileUrl(it))
+                                TelegramMediaPhoto(FileUrl(it), if (settings.attachUrls) it else null)
                             }
                         )
                     }
                     else -> urls.forEach {
                         sendPhoto(
                             chatId,
-                            FileUrl(it)
+                            FileUrl(it),
+                            if (settings.attachUrls) it else null
                         )
                     }
                 }

@@ -10,6 +10,7 @@ import net.kodehawa.lib.imageboards.DefaultImageBoards
 import net.kodehawa.lib.imageboards.ImageBoard
 import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.BoardImage
+import net.kodehawa.lib.imageboards.entities.Rating
 
 @Serializable
 data class ChatSettings(
@@ -18,7 +19,9 @@ data class ChatSettings(
     @Serializable(BoardSerializer::class)
     private val boardBase: DefaultBoards,
     val count: Int = 1,
-    val gallery: Boolean = false
+    val gallery: Boolean = false,
+    val rating: Rating? = null,
+    val attachUrls: Boolean = false
 ) {
     val scheduler by lazy {
         krontabTemplate ?.toSchedule()
@@ -38,7 +41,7 @@ data class ChatSettings(
 
     suspend fun makeRequest(page: Int): List<BoardImage> {
         return withContext(Dispatchers.IO) {
-            board.search(page, count, query).blocking()
+            board.search(page, count, query, rating).blocking()
         }
     }
 
