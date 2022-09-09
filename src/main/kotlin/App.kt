@@ -1,14 +1,13 @@
 import dev.inmo.krontab.utils.asFlow
 import dev.inmo.micro_utils.coroutines.*
 import dev.inmo.micro_utils.pagination.utils.doForAllWithNextPaging
-import dev.inmo.micro_utils.repos.add
+import dev.inmo.micro_utils.repos.*
 import dev.inmo.micro_utils.repos.cache.cache.FullKVCache
 import dev.inmo.micro_utils.repos.cache.cache.KVCache
 import dev.inmo.micro_utils.repos.cache.cached
 import dev.inmo.micro_utils.repos.exposed.keyvalue.ExposedKeyValueRepo
 import dev.inmo.micro_utils.repos.exposed.onetomany.ExposedKeyValuesRepo
 import dev.inmo.micro_utils.repos.mappers.withMapper
-import dev.inmo.micro_utils.repos.unset
 import dev.inmo.tgbotapi.bot.ktor.telegramBot
 import dev.inmo.tgbotapi.extensions.api.bot.getMe
 import dev.inmo.tgbotapi.extensions.api.bot.setMyCommands
@@ -22,7 +21,6 @@ import dev.inmo.tgbotapi.types.*
 import dev.inmo.tgbotapi.types.chat.ChannelChat
 import dev.inmo.tgbotapi.types.chat.PrivateChat
 import dev.inmo.tgbotapi.types.media.TelegramMediaPhoto
-import dev.inmo.tgbotapi.types.message.content.PhotoContent
 import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -97,7 +95,7 @@ suspend fun main(args: Array<String>) {
                 result.dropLast(toDrop)
             }.takeIf { it.isNotEmpty() } ?: return
             runCatchingSafely {
-                val urls = result.map { it.url.also(::println) }
+                val urls = result.map { it.url }
                 chatsUrlsSeen.add(chatId, urls)
                 when {
                     urls.isEmpty() -> return@runCatchingSafely
@@ -155,13 +153,14 @@ suspend fun main(args: Array<String>) {
         }
 
         onCommand(Regex("(help|start)"), requireOnlyCommandInMessage = true) {
-            reply(it, EnableArgsParser(it.chat.id, repo, scope).getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
+            reply(it, EnableArgsParser().getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
         }
         onCommand("enable", requireOnlyCommandInMessage = false) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
-            val parser = EnableArgsParser(it.chat.id, repo, this)
+            val parser = EnableArgsParser()
             runCatchingSafely {
                 parser.parse(args)
+                repo.set(it.chat.id, parser.resultSettings ?: return@runCatchingSafely)
             }.onFailure { e ->
                 e.printStackTrace()
                 if (it.chat is PrivateChat) {
@@ -173,6 +172,31 @@ suspend fun main(args: Array<String>) {
                     delete(it)
                 }
             }
+        }
+        onCommand("request", requireOnlyCommandInMessage = false) {
+            val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
+
+            val chatSettings = if (args.isEmpty()) {
+                repo.get(it.chat.id) ?: run {
+                    if (it.chat is PrivateChat) {
+                        reply(it, "Unable to find default config")
+                    }
+                    return@onCommand
+                }
+            } else {
+                val parser = EnableArgsParser()
+                runCatchingSafely {
+                    parser.parse(args)
+                    parser.resultSettings
+                }.onFailure { e ->
+                    e.printStackTrace()
+                    if (it.chat is PrivateChat) {
+                        reply(it, parser.getFormattedHelp())
+                    }
+                }.getOrNull()
+            }
+
+            triggerSendForChat(it.chat.id, chatSettings ?: return@onCommand)
         }
         onCommand("disable", requireOnlyCommandInMessage = true) {
             runCatchingSafely {
@@ -187,6 +211,7 @@ suspend fun main(args: Array<String>) {
             listOf(
                 BotCommand("start", "Will return the help for the enable command"),
                 BotCommand("help", "Will return the help for the enable command"),
+                BotCommand("request", "Will trigger image immediately with custom settings from arguments or default settings of chat if any"),
                 BotCommand("enable", "Will enable images grabbing for current chat or update exists settings"),
                 BotCommand("disable", "Will disable bot for current chat"),
             )
