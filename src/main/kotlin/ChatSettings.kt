@@ -14,14 +14,14 @@ import net.kodehawa.lib.imageboards.entities.BoardImage
 @Serializable
 data class ChatSettings(
     val query: String,
-    val krontabTemplate: KrontabTemplate,
+    val krontabTemplate: KrontabTemplate?,
     @Serializable(BoardSerializer::class)
     private val boardBase: DefaultBoards,
     val count: Int = 1,
     val gallery: Boolean = false
 ) {
     val scheduler by lazy {
-        krontabTemplate.toSchedule()
+        krontabTemplate ?.toSchedule()
     }
 
     val board: ImageBoard<*>

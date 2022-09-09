@@ -127,8 +127,8 @@ suspend fun main(args: Array<String>) {
             val settings = settings ?: repo.get(chatId)
             chatsChangingMutex.withLock {
                 chatsSendingJobs[chatId] ?.cancel()
-                settings ?.let {
-                    chatsSendingJobs[chatId] = settings.scheduler.asFlow().subscribeSafelyWithoutExceptions(scope) {
+                settings ?.scheduler ?.let {
+                    chatsSendingJobs[chatId] = it.asFlow().subscribeSafelyWithoutExceptions(scope) {
                         triggerSendForChat(chatId, settings)
                     }
                 }
@@ -174,9 +174,9 @@ suspend fun main(args: Array<String>) {
             }
         }
         onCommand("request", requireOnlyCommandInMessage = false) {
-            val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
+            val args = it.content.textSources.drop(1).joinToString("") { it.source }.trim().takeIf { it.isNotBlank() } ?.split(" ")
 
-            val chatSettings = if (args.isEmpty()) {
+            val chatSettings = if (args.isNullOrEmpty()) {
                 repo.get(it.chat.id) ?: run {
                     if (it.chat is PrivateChat) {
                         reply(it, "Unable to find default config")
