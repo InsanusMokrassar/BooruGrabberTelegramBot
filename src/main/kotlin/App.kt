@@ -155,11 +155,11 @@ suspend fun main(args: Array<String>) {
         }
 
         onCommand(Regex("(help|start)"), requireOnlyCommandInMessage = true) {
-            reply(it, EnableArgsParser().getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
+            reply(it, EnableArgsParser(onlyQueryIsRequired = false).getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
         }
         onCommand("enable", requireOnlyCommandInMessage = false) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
-            val parser = EnableArgsParser()
+            val parser = EnableArgsParser(onlyQueryIsRequired = false)
             runCatchingSafely {
                 parser.parse(args)
                 repo.set(it.chat.id, parser.resultSettings ?: return@runCatchingSafely)
@@ -186,7 +186,7 @@ suspend fun main(args: Array<String>) {
                     return@onCommand
                 }
             } else {
-                val parser = EnableArgsParser()
+                val parser = EnableArgsParser(onlyQueryIsRequired = true, repo.get(it.chat.id) ?: ChatSettings.DEFAULT)
                 runCatchingSafely {
                     parser.parse(args)
                     parser.resultSettings

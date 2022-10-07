@@ -15,9 +15,9 @@ import net.kodehawa.lib.imageboards.entities.Rating
 @Serializable
 data class ChatSettings(
     val query: String,
-    val krontabTemplate: KrontabTemplate?,
+    val krontabTemplate: KrontabTemplate? = null,
     @Serializable(BoardSerializer::class)
-    private val boardBase: DefaultBoards,
+    private val boardBase: DefaultBoards = DefaultBoards.SAFEBOORU,
     val count: Int = 1,
     val gallery: Boolean = false,
     val rating: Rating? = null,
@@ -57,5 +57,9 @@ data class ChatSettings(
         override fun serialize(encoder: Encoder, value: DefaultBoards) {
             encoder.encodeString(value.name.lowercase())
         }
+    }
+
+    companion object {
+        val DEFAULT = ChatSettings("", null, DefaultBoards.SAFEBOORU)
     }
 }
