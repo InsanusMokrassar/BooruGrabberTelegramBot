@@ -21,6 +21,7 @@ import dev.inmo.tgbotapi.types.*
 import dev.inmo.tgbotapi.types.chat.ChannelChat
 import dev.inmo.tgbotapi.types.chat.PrivateChat
 import dev.inmo.tgbotapi.types.media.TelegramMediaPhoto
+import dev.inmo.tgbotapi.utils.code
 import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -28,7 +29,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import models.Config
 import net.kodehawa.lib.imageboards.ImageBoard
+import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.BoardImage
+import kotlin.reflect.full.memberProperties
 
 /**
  * This method by default expects one argument in [args] field: telegram bot configuration
@@ -208,6 +211,26 @@ suspend fun main(args: Array<String>) {
                 delete(it)
             }
         }
+        onCommand("take_settings", requireOnlyCommandInMessage = true) {
+            val settings = runCatchingSafely {
+                repo.get(ChatId(it.chat.id.chatId))
+            }.getOrNull()
+            runCatchingSafely {
+                if (settings == null) {
+                    reply(it, "You didn't enable requesting")
+                } else {
+                    reply(it, ) {
+                        +"Query: " + code(settings.query) + "\n"
+                        +"Krontab: " + code(settings.krontabTemplate ?: "unset") + "\n"
+                        +"Board: " + code(DefaultBoards.values().first { it == settings.board.boardType }.name) + "\n"
+                        +"Count: " + code(settings.count.toString()) + "\n"
+                        +"Gallery: " + code(settings.gallery.toString()) + "\n"
+                        +"Rating: " + code(settings.rating ?.name ?: "unset") + "\n"
+                        +"Attach urls: " + code(settings.attachUrls.toString())
+                    }
+                }
+            }
+        }
 
         setMyCommands(
             listOf(
@@ -216,6 +239,7 @@ suspend fun main(args: Array<String>) {
                 BotCommand("request", "Will trigger image immediately with custom settings from arguments or default settings of chat if any"),
                 BotCommand("enable", "Will enable images grabbing for current chat or update exists settings"),
                 BotCommand("disable", "Will disable bot for current chat"),
+                BotCommand("take_settings", "Take your current settings"),
             )
         )
 

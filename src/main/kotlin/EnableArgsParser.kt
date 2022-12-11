@@ -31,14 +31,8 @@ class EnableArgsParser(
         .transformValues(5) { it.joinToString(" ") }
         .help("Krontab in format * * * * *. See https://bookstack.inmo.dev/books/krontab/page/string-format")
     val board by option("-b", "--board")
+        .default("safebooru")
         .convert { ChatSettings.BoardSerializer.types.getValue(it) }
-        .run {
-            if (onlyQueryIsRequired) {
-                this
-            } else {
-                required()
-            }
-        }
         .help("Board type. Possible values: ${ChatSettings.BoardSerializer.types.keys.joinToString { it }}")
     val gallery by option("-g", "--gallery")
         .flag(default = base.gallery)
