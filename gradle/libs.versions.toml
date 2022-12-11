@@ -1,12 +1,12 @@
 [versions]
 
-kotlin = "1.7.10"
-tgbotapi = "3.2.1"
-microutils = "0.12.11"
+kotlin = "1.7.22"
+tgbotapi = "4.2.1"
+microutils = "0.16.1"
 imageboard = "2.5.2"
-krontab = "0.8.0"
-kslog = "0.5.1"
-exposed = "0.39.2"
+krontab = "0.8.4"
+kslog = "0.5.4"
+exposed = "0.41.1"
 psql = "42.5.0"
 clikt = "3.5.0"
 

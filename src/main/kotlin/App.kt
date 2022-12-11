@@ -162,7 +162,7 @@ suspend fun main(args: Array<String>) {
             val parser = EnableArgsParser(onlyQueryIsRequired = false)
             runCatchingSafely {
                 parser.parse(args)
-                repo.set(it.chat.id, parser.resultSettings ?: return@runCatchingSafely)
+                repo.set(ChatId(it.chat.id.chatId), parser.resultSettings ?: return@runCatchingSafely)
             }.onFailure { e ->
                 e.printStackTrace()
                 if (it.chat is PrivateChat) {
@@ -179,14 +179,14 @@ suspend fun main(args: Array<String>) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.trim().takeIf { it.isNotBlank() } ?.split(" ")
 
             val chatSettings = if (args.isNullOrEmpty()) {
-                repo.get(it.chat.id) ?: run {
+                repo.get(ChatId(it.chat.id.chatId)) ?: run {
                     if (it.chat is PrivateChat) {
                         reply(it, "Unable to find default config")
                     }
                     return@onCommand
                 }
             } else {
-                val parser = EnableArgsParser(onlyQueryIsRequired = true, repo.get(it.chat.id) ?: ChatSettings.DEFAULT)
+                val parser = EnableArgsParser(onlyQueryIsRequired = true, repo.get(ChatId(it.chat.id.chatId)) ?: ChatSettings.DEFAULT)
                 runCatchingSafely {
                     parser.parse(args)
                     parser.resultSettings
@@ -198,11 +198,11 @@ suspend fun main(args: Array<String>) {
                 }.getOrNull()
             }
 
-            triggerSendForChat(it.chat.id, chatSettings ?: return@onCommand)
+            triggerSendForChat(ChatId(it.chat.id.chatId), chatSettings ?: return@onCommand)
         }
         onCommand("disable", requireOnlyCommandInMessage = true) {
             runCatchingSafely {
-                repo.unset(it.chat.id)
+                repo.unset(ChatId(it.chat.id.chatId))
             }
             runCatchingSafely {
                 delete(it)
