@@ -94,8 +94,7 @@ suspend fun main(args: Array<String>) {
                     )
                     i++
                 }
-                val toDrop = (result.size - settings.count).takeIf { it > 0 } ?: return@let result
-                result.dropLast(toDrop)
+                result.take(settings.count)
             }.takeIf { it.isNotEmpty() } ?: return
             runCatchingSafely {
                 val urls = result.map { it.url }
@@ -226,7 +225,18 @@ suspend fun main(args: Array<String>) {
                         +"Count: " + code(settings.count.toString()) + "\n"
                         +"Gallery: " + code(settings.gallery.toString()) + "\n"
                         +"Rating: " + code(settings.rating ?.name ?: "unset") + "\n"
-                        +"Attach urls: " + code(settings.attachUrls.toString())
+                        +"Attach urls: " + code(settings.attachUrls.toString()) + "\n"
+                        +"Command: " + code(
+                            "/request " +
+                                "${settings.query} " +
+                                (settings.krontabTemplate ?.let { "-k $it " } ?: "") +
+                                "-b ${DefaultBoards.values().first { it == settings.board.boardType }.name.lowercase()} " +
+                                "-n ${settings.count} " +
+                                (if (settings.gallery) "-g " else "") +
+                                (settings.rating ?.let { "-r ${it.name} " } ?: "") +
+                                (if (settings.attachUrls) "-a " else "")
+
+                        )
                     }
                 }
             }
