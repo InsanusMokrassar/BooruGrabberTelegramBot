@@ -41,7 +41,7 @@ data class ChatSettings(
 
     suspend fun makeRequest(page: Int): List<BoardImage> {
         return withContext(Dispatchers.IO) {
-            board.search(page, count, query, rating).blocking()
+            board.search(page, count, query, rating).blocking() ?: emptyList()
         }
     }
 

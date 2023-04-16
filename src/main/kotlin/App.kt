@@ -89,7 +89,7 @@ suspend fun main(args: Array<String>) {
                     val images = settings.makeRequest(i).takeIf { it.isNotEmpty() } ?: break
                     result.addAll(
                         images.filterNot {
-                            chatsUrlsSeen.contains(chatId, it.url)
+                            chatsUrlsSeen.contains(chatId, it.url ?: return@filterNot true)
                         }
                     )
                     i++

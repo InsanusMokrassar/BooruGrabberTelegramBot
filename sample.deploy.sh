@@ -17,7 +17,7 @@ app=booru_grabber_bot
 version=0.0.1
 server=hub.docker.com
 
-assert_success ../gradlew build
+assert_success ./gradlew build
 # scp ./build/distributions/AutoPostTestTelegramBot-1.0.0.zip ./config.json developer@insanusmokrassar.dev:/tmp/
 assert_success sudo docker build -t $app:"$version" .
 assert_success sudo docker tag $app:"$version" $server/$app:$version
