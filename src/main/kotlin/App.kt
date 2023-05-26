@@ -1,10 +1,8 @@
-import dev.inmo.krontab.utils.asFlow
+import dev.inmo.krontab.utils.asFlowWithDelays
 import dev.inmo.micro_utils.coroutines.*
 import dev.inmo.micro_utils.pagination.utils.doForAllWithNextPaging
 import dev.inmo.micro_utils.repos.*
-import dev.inmo.micro_utils.repos.cache.cache.FullKVCache
-import dev.inmo.micro_utils.repos.cache.cache.KVCache
-import dev.inmo.micro_utils.repos.cache.cached
+import dev.inmo.micro_utils.repos.cache.full.fullyCached
 import dev.inmo.micro_utils.repos.exposed.keyvalue.ExposedKeyValueRepo
 import dev.inmo.micro_utils.repos.exposed.onetomany.ExposedKeyValuesRepo
 import dev.inmo.micro_utils.repos.mappers.withMapper
@@ -31,7 +29,6 @@ import models.Config
 import net.kodehawa.lib.imageboards.ImageBoard
 import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.BoardImage
-import kotlin.reflect.full.memberProperties
 
 /**
  * This method by default expects one argument in [args] field: telegram bot configuration
@@ -59,9 +56,9 @@ suspend fun main(args: Array<String>) {
         { json.encodeToString(ChatSettings.serializer(), this) },
         { ChatId(this) },
         { json.decodeFromString(ChatSettings.serializer(), this) },
-    ).cached(FullKVCache(), scope = scope)
+    ).fullyCached(scope = scope)
 
-    val chatsUrlsSeen = ExposedKeyValuesRepo(
+    val chatsUrlsSeenRepo = ExposedKeyValuesRepo(
         config.database.database,
         { long("chat_id") },
         { text("url") },
@@ -71,7 +68,7 @@ suspend fun main(args: Array<String>) {
         { this },
         { ChatId(this) },
         { this },
-    ).cached(KVCache(128), scope = scope)
+    )
 
     val chatsChangingMutex = Mutex()
     val chatsSendingJobs = mutableMapOf<ChatId, Job>()
@@ -82,6 +79,7 @@ suspend fun main(args: Array<String>) {
         val me = getMe()
 
         suspend fun triggerSendForChat(chatId: ChatId, settings: ChatSettings) {
+            val seenUrls = chatsUrlsSeenRepo.getAll(chatId).toMutableSet()
             val result = let {
                 val result = mutableListOf<BoardImage>()
                 var i = 0
@@ -89,7 +87,7 @@ suspend fun main(args: Array<String>) {
                     val images = settings.makeRequest(i).takeIf { it.isNotEmpty() } ?: break
                     result.addAll(
                         images.filterNot {
-                            chatsUrlsSeen.contains(chatId, it.url ?: return@filterNot true)
+                            seenUrls.contains(it.url ?: return@filterNot true)
                         }
                     )
                     i++
@@ -98,7 +96,8 @@ suspend fun main(args: Array<String>) {
             }.takeIf { it.isNotEmpty() } ?: return
             runCatchingSafely {
                 val urls = result.map { it.url }
-                chatsUrlsSeen.add(chatId, urls)
+                chatsUrlsSeenRepo.add(chatId, urls)
+                seenUrls.addAll(urls)
                 when {
                     urls.isEmpty() -> return@runCatchingSafely
                     urls.size == 1 -> sendPhoto(
@@ -132,18 +131,8 @@ suspend fun main(args: Array<String>) {
             chatsChangingMutex.withLock {
                 chatsSendingJobs[chatId] ?.cancel()
                 settings ?.scheduler ?.let {
-                    chatsSendingJobs[chatId] = it.asFlow().subscribeSafelyWithoutExceptions(scope) {
+                    chatsSendingJobs[chatId] = it.asFlowWithDelays().subscribeSafelyWithoutExceptions(scope) {
                         triggerSendForChat(chatId, settings)
-                    }
-                }
-            }
-        }
-
-        doForAllWithNextPaging {
-            repo.keys(it).also {
-                it.results.forEach {
-                    runCatchingSafely {
-                        refreshChatJob(it, null)
                     }
                 }
             }
@@ -156,12 +145,22 @@ suspend fun main(args: Array<String>) {
             refreshChatJob(it, null)
         }
 
+        doForAllWithNextPaging {
+            repo.keys(it).also {
+                it.results.forEach {
+                    runCatchingSafely {
+                        refreshChatJob(it, null)
+                    }
+                }
+            }
+        }
+
         onCommand(Regex("(help|start)"), requireOnlyCommandInMessage = true) {
-            reply(it, EnableArgsParser(onlyQueryIsRequired = false).getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
+            reply(it, EnableArgsParser().getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
         }
         onCommand("enable", requireOnlyCommandInMessage = false) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
-            val parser = EnableArgsParser(onlyQueryIsRequired = false)
+            val parser = EnableArgsParser()
             runCatchingSafely {
                 parser.parse(args)
                 repo.set(ChatId(it.chat.id.chatId), parser.resultSettings ?: return@runCatchingSafely)
@@ -188,7 +187,7 @@ suspend fun main(args: Array<String>) {
                     return@onCommand
                 }
             } else {
-                val parser = EnableArgsParser(onlyQueryIsRequired = true, repo.get(ChatId(it.chat.id.chatId)) ?: ChatSettings.DEFAULT)
+                val parser = EnableArgsParser(repo.get(ChatId(it.chat.id.chatId)) ?: ChatSettings.DEFAULT)
                 runCatchingSafely {
                     parser.parse(args)
                     parser.resultSettings

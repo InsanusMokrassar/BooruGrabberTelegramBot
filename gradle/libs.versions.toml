@@ -1,10 +1,10 @@
 [versions]
 
-kotlin = "1.8.20"
-tgbotapi = "7.0.1"
-microutils = "0.17.6"
+kotlin = "1.8.21"
+tgbotapi = "7.1.3"
+microutils = "0.18.4"
 imageboard = "2.6.0"
-krontab = "0.10.0"
+krontab = "1.0.0"
 kslog = "1.1.1"
 exposed = "0.41.1"
 psql = "42.6.0"

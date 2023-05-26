@@ -7,8 +7,7 @@ import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.Rating
 
 class EnableArgsParser(
-    onlyQueryIsRequired: Boolean,
-    private val base: ChatSettings = ChatSettings("", null, DefaultBoards.SAFEBOORU)
+    private val base: ChatSettings = ChatSettings.DEFAULT
 ) : CliktCommand(name = "enable") {
     private fun <EachT : Any, ValueT> NullableOption<EachT, ValueT>.default(
         value: EachT?,
@@ -26,6 +25,7 @@ class EnableArgsParser(
         .check("Count should be in range 1-10") { it in 1 .. 10 }
     val query by argument()
         .multiple(required = true)
+        .optional()
         .help("Your query to booru. Use syntax \"-- -sometag\" to add excluding of some tag in query")
     val krontab by option("-k", "--krontab")
         .transformValues(5) { it.joinToString(" ") }
@@ -47,7 +47,7 @@ class EnableArgsParser(
 
     override fun run() {
         resultSettings = ChatSettings(
-            query.filterNot { it.isEmpty() }.joinToString(" ").trim(),
+            query ?.filterNot { it.isEmpty() } ?.joinToString(" ") ?.trim() ?: base.query,
             krontab,
             board ?: base.board.boardType as DefaultBoards,
             count ?: base.count,
