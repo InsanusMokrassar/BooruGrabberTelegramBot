@@ -14,7 +14,7 @@ function assert_success() {
 }
 
 app=booru_grabber_bot
-version="`grep ./gradle.properties -e "^version=" | sed -e "s/version=\(.*\)/\1/"`"
+version="`grep ./gradle.properties -e "^docker_version=" | sed -e "s/docker_version=\(.*\)/\1/"`"
 server=insanusmokrassar
 
 assert_success docker build -t $app:"$version" .
