@@ -156,7 +156,7 @@ suspend fun main(args: Array<String>) {
         }
 
         onCommand(Regex("(help|start)"), requireOnlyCommandInMessage = true) {
-            reply(it, EnableArgsParser().getFormattedHelp().takeIf { it.isNotBlank() } ?: return@onCommand)
+            reply(it, EnableArgsParser().getFormattedHelp() ?.takeIf { it.isNotBlank() } ?: return@onCommand)
         }
         onCommand("enable", requireOnlyCommandInMessage = false) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
@@ -167,7 +167,7 @@ suspend fun main(args: Array<String>) {
             }.onFailure { e ->
                 e.printStackTrace()
                 if (it.chat is PrivateChat) {
-                    reply(it, parser.getFormattedHelp())
+                    reply(it, parser.getFormattedHelp()!!)
                 }
             }
             runCatchingSafely {
@@ -194,7 +194,7 @@ suspend fun main(args: Array<String>) {
                 }.onFailure { e ->
                     e.printStackTrace()
                     if (it.chat is PrivateChat) {
-                        reply(it, parser.getFormattedHelp())
+                        reply(it, parser.getFormattedHelp()!!)
                     }
                 }.getOrNull()
             }
