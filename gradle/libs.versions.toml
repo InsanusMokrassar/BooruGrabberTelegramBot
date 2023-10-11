@@ -1,12 +1,12 @@
 [versions]
 
 kotlin = "1.9.10"
-tgbotapi = "9.2.1"
-microutils = "0.20.6"
+tgbotapi = "9.2.2"
+microutils = "0.20.7"
 imageboard = "2.6.0"
 krontab = "2.2.1"
 kslog = "1.2.1"
-exposed = "0.43.0"
+exposed = "0.44.0"
 psql = "42.6.0"
 clikt = "4.2.1"
 
