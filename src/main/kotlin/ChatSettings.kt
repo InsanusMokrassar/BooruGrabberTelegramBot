@@ -6,7 +6,6 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import net.kodehawa.lib.imageboards.DefaultImageBoards
 import net.kodehawa.lib.imageboards.ImageBoard
 import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.BoardImage
@@ -29,14 +28,14 @@ data class ChatSettings(
 
     val board: ImageBoard<*>
         get() = when (boardBase) {
-            DefaultBoards.R34 -> DefaultImageBoards.RULE34
-            DefaultBoards.E621 -> DefaultImageBoards.E621
-            DefaultBoards.KONACHAN -> DefaultImageBoards.KONACHAN
-            DefaultBoards.YANDERE -> DefaultImageBoards.YANDERE
-            DefaultBoards.DANBOORU -> DefaultImageBoards.DANBOORU
-            DefaultBoards.SAFEBOORU -> DefaultImageBoards.SAFEBOORU
-            DefaultBoards.GELBOORU -> DefaultImageBoards.GELBOORU
-            DefaultBoards.E926 -> DefaultImageBoards.E926
+            DefaultBoards.R34 -> InternalBoards.RULE34
+            DefaultBoards.E621 -> InternalBoards.E621
+            DefaultBoards.KONACHAN -> InternalBoards.KONACHAN
+            DefaultBoards.YANDERE -> InternalBoards.YANDERE
+            DefaultBoards.DANBOORU -> InternalBoards.DANBOORU
+            DefaultBoards.SAFEBOORU -> InternalBoards.SAFEBOORU
+            DefaultBoards.GELBOORU -> InternalBoards.GELBOORU
+            DefaultBoards.E926 -> InternalBoards.E926
         }
 
     suspend fun makeRequest(page: Int): List<BoardImage> {

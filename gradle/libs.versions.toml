@@ -6,6 +6,7 @@ microutils = "0.20.7"
 imageboard = "2.6.0"
 krontab = "2.2.1"
 kslog = "1.2.1"
+ktor = "2.3.5"
 exposed = "0.44.0"
 psql = "42.6.0"
 clikt = "4.2.1"
@@ -22,6 +23,8 @@ kslog = { module = "dev.inmo:kslog", version.ref = "kslog" }
 
 exposed = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 psql = { module = "org.postgresql:postgresql", version.ref = "psql" }
+
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 
 imageboard = { module = "com.github.Kodehawa:imageboard-api", version.ref = "imageboard" }
 

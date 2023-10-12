@@ -6,12 +6,12 @@ import dev.inmo.micro_utils.repos.cache.full.fullyCached
 import dev.inmo.micro_utils.repos.exposed.keyvalue.ExposedKeyValueRepo
 import dev.inmo.micro_utils.repos.exposed.onetomany.ExposedKeyValuesRepo
 import dev.inmo.micro_utils.repos.mappers.withMapper
-import dev.inmo.tgbotapi.bot.ktor.telegramBot
 import dev.inmo.tgbotapi.extensions.api.bot.getMe
 import dev.inmo.tgbotapi.extensions.api.bot.setMyCommands
 import dev.inmo.tgbotapi.extensions.api.delete
 import dev.inmo.tgbotapi.extensions.api.send.media.*
 import dev.inmo.tgbotapi.extensions.api.send.reply
+import dev.inmo.tgbotapi.extensions.api.telegramBot
 import dev.inmo.tgbotapi.extensions.behaviour_builder.buildBehaviourWithLongPolling
 import dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling.onCommand
 import dev.inmo.tgbotapi.requests.abstracts.FileUrl
@@ -20,6 +20,7 @@ import dev.inmo.tgbotapi.types.chat.ChannelChat
 import dev.inmo.tgbotapi.types.chat.PrivateChat
 import dev.inmo.tgbotapi.types.media.TelegramMediaPhoto
 import dev.inmo.tgbotapi.utils.code
+import io.ktor.client.engine.okhttp.*
 import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -29,6 +30,9 @@ import models.Config
 import net.kodehawa.lib.imageboards.ImageBoard
 import net.kodehawa.lib.imageboards.boards.DefaultBoards
 import net.kodehawa.lib.imageboards.entities.BoardImage
+import okhttp3.OkHttpClient
+
+internal lateinit var InternalBoards: Boards
 
 /**
  * This method by default expects one argument in [args] field: telegram bot configuration
@@ -39,7 +43,14 @@ suspend fun main(args: Array<String>) {
     // decode config
     val config: Config = json.decodeFromString(Config.serializer(), File(args.first()).readText())
     // that is your bot
-    val bot = telegramBot(config.token)
+    val bot = telegramBot(config.token, OkHttp) {
+        config.client ?.apply { setupConfig() }
+    }
+    InternalBoards = Boards(
+        OkHttpClient.Builder().apply {
+            config.client ?.apply { setupConfig() }
+        }.build()
+    )
 
     ImageBoard.setUserAgent("WhoAmI?")
 
