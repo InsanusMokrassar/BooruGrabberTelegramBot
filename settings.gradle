@@ -1,3 +1,1 @@
 rootProject.name = 'booru_grabber_bot'
-
-enableFeaturePreview("VERSION_CATALOGS")
