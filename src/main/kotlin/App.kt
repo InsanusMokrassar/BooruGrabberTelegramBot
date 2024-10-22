@@ -1,3 +1,4 @@
+import com.github.ajalt.clikt.core.parse
 import dev.inmo.krontab.utils.asFlowWithDelays
 import dev.inmo.micro_utils.coroutines.*
 import dev.inmo.micro_utils.pagination.utils.doForAllWithNextPaging
@@ -63,9 +64,9 @@ suspend fun main(args: Array<String>) {
         { text("config") },
         "configs"
     ).withMapper(
-        { chatId },
+        { chatId.long },
         { json.encodeToString(ChatSettings.serializer(), this) },
-        { ChatId(this) },
+        { ChatId(RawChatId(this)) },
         { json.decodeFromString(ChatSettings.serializer(), this) },
     ).fullyCached(scope = scope)
 
@@ -75,9 +76,9 @@ suspend fun main(args: Array<String>) {
         { text("url") },
         "chatsUrlsSeen"
     ).withMapper(
-        { chatId },
+        { chatId.long },
         { this },
-        { ChatId(this) },
+        { ChatId(RawChatId(this)) },
         { this },
     )
 
