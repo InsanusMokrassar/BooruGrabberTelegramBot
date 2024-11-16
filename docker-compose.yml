@@ -10,3 +10,8 @@ services:
       POSTGRES_DB: "test"
     ports:
       - "8092:5432"
+#  booru_grabber_bot:
+#    image: insanusmokrassar/booru_grabber_bot
+#    container_name: "booru_grabber_bot"
+#    volumes:
+#      - "path_to_file:/booru_grabber_bot/config.json:ro"
