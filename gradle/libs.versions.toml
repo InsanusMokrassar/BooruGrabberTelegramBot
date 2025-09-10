@@ -1,7 +1,7 @@
 [versions]
 
 kotlin = "2.0.21"
-tgbotapi = "20.0.1"
+tgbotapi = "28.0.2"
 microutils = "0.23.0"
 imageboard = "2.7.0"
 krontab = "2.6.1"
