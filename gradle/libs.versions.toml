@@ -1,6 +1,6 @@
 [versions]
 
-kotlin = "2.2.10"
+kotlin = "2.3.21"
 tgbotapi = "28.0.2"
 microutils = "0.26.3"
 imageboard = "2.7.0"
