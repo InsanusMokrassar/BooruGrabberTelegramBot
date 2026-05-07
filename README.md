@@ -13,6 +13,99 @@ Bot for booru-boards grabbing. It uses [imageboard-api](https://github.com/Kodeh
 
 Sample bot presented here: [@booru_grabber_bot](https://t.me/booru_grabber_bot)
 
+## Fast how to start
+
+1. Create a `config.json`. Minimal required config:
+
+```json
+{
+  "token": "your bot token",
+  "database": {
+    "url": "jdbc:postgresql://booru_grabber_postgres:5432/test",
+    "username": "test",
+    "password": "test"
+  }
+}
+```
+
+All available properties:
+
+```json
+{
+  "token": "your bot token",
+  "database": {
+    "url": "jdbc:postgresql://booru_grabber_postgres:5432/test",
+    "driver": "org.postgresql.Driver",
+    "username": "test",
+    "password": "test",
+    "reconnectOptions": {
+      "attempts": 3,
+      "delay": 1000
+    }
+  },
+  "client": {
+    "connectionTimeoutMillis": null,
+    "requestTimeoutMillis": null,
+    "responseTimeoutMillis": null,
+    "proxy": {
+      "hostname": "proxy.example.com",
+      "type": "socks",
+      "port": 1080,
+      "username": null,
+      "password": null
+    }
+  }
+}
+```
+
+Property reference:
+
+**`token`** *(required)* — Telegram bot token from [@BotFather](https://t.me/BotFather).
+
+**`database`** *(required)*:
+
+- `url` — JDBC connection URL (default: `jdbc:pgsql://localhost:12346/test`)
+- `driver` — JDBC driver class (default: `org.postgresql.Driver`)
+- `username` — database user (default: empty)
+- `password` — database password (default: empty)
+- `reconnectOptions.attempts` — how many times to retry connecting on startup (default: `3`)
+- `reconnectOptions.delay` — delay in milliseconds between retries (default: `1000`)
+
+**`client`** *(optional)* — HTTP client settings for Telegram API requests:
+
+- `connectionTimeoutMillis` — connection timeout in ms
+- `requestTimeoutMillis` — write/request timeout in ms
+- `responseTimeoutMillis` — read/response timeout in ms
+- `proxy.hostname` *(required if proxy set)* — proxy host
+- `proxy.type` — `socks` (default) or `http`
+- `proxy.port` — proxy port (default: `1080` for socks, `3128` for http)
+- `proxy.username` — proxy username (optional; for socks, password is required when username is set)
+- `proxy.password` — proxy password (optional)
+
+2. In `docker-compose.yml`, uncomment the `booru_grabber_bot` service and set the path to your config file:
+
+```yaml
+services:
+  booru_grabber_postgres:
+    image: postgres
+    container_name: "booru_grabber_postgres"
+    environment:
+      POSTGRES_USER: "test"
+      POSTGRES_PASSWORD: "test"
+      POSTGRES_DB: "test"
+  booru_grabber_bot:
+    image: insanusmokrassar/booru_grabber_bot
+    container_name: "booru_grabber_bot"
+    volumes:
+      - "/absolute/path/to/config.json:/booru_grabber_bot/config.json:ro"
+```
+
+3. Start the services:
+
+```bash
+docker-compose up -d
+```
+
 ## Available commands
 
 Bot have two helping commands: `/start` and `/help`. These commands will return help for bot `/request`/`/enable` commands:

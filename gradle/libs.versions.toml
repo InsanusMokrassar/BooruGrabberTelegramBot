@@ -1,15 +1,15 @@
 [versions]
 
-kotlin = "2.2.10"
-tgbotapi = "28.0.2"
-microutils = "0.26.3"
-imageboard = "2.7.0"
-krontab = "2.7.2"
-kslog = "1.5.0"
-ktor = "3.2.3"
-exposed = "0.61.0"
-psql = "42.7.4"
-clikt = "5.0.1"
+kotlin = "2.3.21"
+tgbotapi = "33.1.0"
+microutils = "0.29.2"
+imageboard = "2.6.1.1"
+krontab = "2.9.0"
+kslog = "1.6.1"
+ktor = "3.4.3"
+exposed = "1.2.0"
+psql = "42.7.11"
+clikt = "5.1.0"
 
 [libraries]
 
