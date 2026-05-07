@@ -106,12 +106,12 @@ suspend fun main(args: Array<String>) {
                 }
                 result.take(settings.count)
             }.takeIf { it.isNotEmpty() } ?: return
-            runCatchingSafely {
+            runCatchingLogging {
                 val urls = result.map { it.url }
                 chatsUrlsSeenRepo.add(chatId, urls)
                 seenUrls.addAll(urls)
                 when {
-                    urls.isEmpty() -> return@runCatchingSafely
+                    urls.isEmpty() -> return@runCatchingLogging
                     urls.size == 1 -> sendPhoto(
                         chatId,
                         FileUrl(urls.first()),
@@ -143,24 +143,24 @@ suspend fun main(args: Array<String>) {
             chatsChangingMutex.withLock {
                 chatsSendingJobs[chatId] ?.cancel()
                 settings ?.scheduler ?.let {
-                    chatsSendingJobs[chatId] = it.asFlowWithDelays().subscribeSafelyWithoutExceptions(scope) {
+                    chatsSendingJobs[chatId] = it.asFlowWithDelays().subscribeLoggingDropExceptions(scope) {
                         triggerSendForChat(chatId, settings)
                     }
                 }
             }
         }
 
-        repo.onNewValue.subscribeSafelyWithoutExceptions(this) {
+        repo.onNewValue.subscribeLoggingDropExceptions(this) {
             refreshChatJob(it.first, it.second)
         }
-        repo.onValueRemoved.subscribeSafelyWithoutExceptions(this) {
+        repo.onValueRemoved.subscribeLoggingDropExceptions(this) {
             refreshChatJob(it, null)
         }
 
         doForAllWithNextPaging {
             repo.keys(it).also {
                 it.results.forEach {
-                    runCatchingSafely {
+                    runCatchingLogging {
                         refreshChatJob(it, null)
                     }
                 }
@@ -173,16 +173,16 @@ suspend fun main(args: Array<String>) {
         onCommand("enable", requireOnlyCommandInMessage = false) {
             val args = it.content.textSources.drop(1).joinToString("") { it.source }.split(" ")
             val parser = EnableArgsParser()
-            runCatchingSafely {
+            runCatchingLogging {
                 parser.parse(args)
-                repo.set(ChatId(it.chat.id.chatId), parser.resultSettings ?: return@runCatchingSafely)
+                repo.set(ChatId(it.chat.id.chatId), parser.resultSettings ?: return@runCatchingLogging)
             }.onFailure { e ->
                 e.printStackTrace()
                 if (it.chat is PrivateChat) {
                     reply(it, parser.getFormattedHelp()!!)
                 }
             }
-            runCatchingSafely {
+            runCatchingLogging {
                 if (it.chat is ChannelChat) {
                     delete(it)
                 }
@@ -200,7 +200,7 @@ suspend fun main(args: Array<String>) {
                 }
             } else {
                 val parser = EnableArgsParser(repo.get(ChatId(it.chat.id.chatId)) ?: ChatSettings.DEFAULT)
-                runCatchingSafely {
+                runCatchingLogging {
                     parser.parse(args)
                     parser.resultSettings
                 }.onFailure { e ->
@@ -214,18 +214,18 @@ suspend fun main(args: Array<String>) {
             triggerSendForChat(ChatId(it.chat.id.chatId), chatSettings ?: return@onCommand)
         }
         onCommand("disable", requireOnlyCommandInMessage = true) {
-            runCatchingSafely {
+            runCatchingLogging {
                 repo.unset(ChatId(it.chat.id.chatId))
             }
-            runCatchingSafely {
+            runCatchingLogging {
                 delete(it)
             }
         }
         onCommand("take_settings", requireOnlyCommandInMessage = true) {
-            val settings = runCatchingSafely {
+            val settings = runCatchingLogging {
                 repo.get(ChatId(it.chat.id.chatId))
             }.getOrNull()
-            runCatchingSafely {
+            runCatchingLogging {
                 if (settings == null) {
                     reply(it, "You didn't enable requesting")
                 } else {

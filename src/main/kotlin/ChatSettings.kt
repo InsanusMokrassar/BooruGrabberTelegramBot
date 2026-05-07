@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 import dev.inmo.krontab.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,6 +46,8 @@ data class ChatSettings(
         }
     }
 
+    @ExperimentalSerializationApi
+    @Suppress("EXTERNAL_SERIALIZER_USELESS")
     @Serializer(DefaultBoards::class)
     object BoardSerializer : KSerializer<DefaultBoards> {
         override val descriptor: SerialDescriptor = String.serializer().descriptor
