@@ -8,7 +8,7 @@ krontab = "2.9.0"
 kslog = "1.6.1"
 ktor = "3.4.3"
 exposed = "1.2.0"
-psql = "42.7.11"
+psql = "42.7.13"
 clikt = "5.1.0"
 
 [libraries]
