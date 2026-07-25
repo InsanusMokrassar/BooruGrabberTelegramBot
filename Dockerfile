@@ -1,4 +1,4 @@
-FROM bellsoft/liberica-openjdk-alpine:19
+FROM bellsoft/liberica-openjdk-alpine:25
 
 ADD ./build/distributions/booru_grabber_bot.tar /
 RUN chown -R 1000:1000 "/booru_grabber_bot"
